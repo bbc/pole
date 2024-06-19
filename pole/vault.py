@@ -31,6 +31,21 @@ async def detect_kv_version(client: Client, mount_point: str = "secret") -> KvV1
         return client.secrets.kv.v1
 
 
+async def read_secret(kv: KvV1 | KvV2, path: str, mount_point: str = "secret"):
+    """
+    Read (the latest version of) a KV value from vault. Returns only the
+    key/value pairs stored: any metadata is excluded.
+    """
+    if isinstance(kv, KvV1):
+        return kv.read_secret(path, mount_point=mount_point)["data"]
+    elif isinstance(kv, KvV2):
+        return kv.read_secret_version(
+            path,
+            mount_point=mount_point,
+            raise_on_deleted_version=True,
+        )["data"]["data"]
+
+
 async def list_secrets(
     kv: KvV1 | KvV2, path: str, mount_point: str = "secret"
 ) -> list[str]:

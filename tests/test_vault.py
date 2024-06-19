@@ -14,6 +14,7 @@ from hvac.api.secrets_engines.kv_v2 import KvV2
 
 from pole.vault import (
     detect_kv_version,
+    read_secret,
     list_secrets,
     list_secrets_recursive,
 )
@@ -106,6 +107,26 @@ class TestDetectKvVersion:
         )
 
         assert isinstance(await detect_kv_version(vault, "my-secrets/"), KvV2)
+
+
+class TestReadSecret:
+    async def test_v1(self, vault: Client) -> None:
+        vault.sys.enable_secrets_engine(
+            backend_type="kv",
+            path="secret/",
+            options={"version": "1"},
+        )
+        vault.secrets.kv.v1.create_or_update_secret("foo", {"a": "x"})
+        assert await read_secret(vault.secrets.kv.v1, "foo") == {"a": "x"}
+
+    async def test_v2(self, vault: Client) -> None:
+        vault.sys.enable_secrets_engine(
+            backend_type="kv",
+            path="secret/",
+            options={"version": "2"},
+        )
+        vault.secrets.kv.v2.create_or_update_secret("foo", {"a": "x"})
+        assert await read_secret(vault.secrets.kv.v2, "foo") == {"a": "x"}
 
 
 class TestListSecrets:
