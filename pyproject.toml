@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pole"
+dependencies = ["hvac"]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = {attr = "pole.__version__"}
+
+[project.scripts]
+pole = "pole:main"
