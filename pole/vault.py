@@ -92,9 +92,15 @@ async def list_secrets_recursive(
     }
 
     # Serialise the iteration
-    for key, children in child_iterators.items():
-        if children is None:
-            yield key
-        else:
-            async for subkey in children:
-                yield key + subkey
+    try:
+        for key, children in child_iterators.items():
+            if children is None:
+                yield key
+            else:
+                async for subkey in children:
+                    yield key + subkey
+    except:
+        for child in child_iterators.values():
+            if child is not None:
+                child.aclose()
+        raise
