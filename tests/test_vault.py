@@ -59,7 +59,7 @@ def vault(tmp_path: Path) -> Iterator[Client]:
 
         # Wait for vault to start
         client = Client()
-        for _attempt in range(10):
+        for _attempt in range(100):
             try:
                 client.sys.is_initialized()  # API endpoint always available
                 break
