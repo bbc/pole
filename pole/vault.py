@@ -78,6 +78,9 @@ async def list_secrets_recursive(
 
     Iteration is depth-first in hierarchical lexicographical order.
     """
+    if not path.endswith("/"):
+        path += "/"
+
     # Recurse into all child directories simultaneously
     child_iterators = {
         key: (
