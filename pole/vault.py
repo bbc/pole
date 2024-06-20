@@ -15,12 +15,11 @@ async def detect_kv_version(client: Client, mount_point: str = "secret") -> KvV1
     Detect the kv store version mounted at the provided mount_point and return
     the relevant API class.
     """
-    loop = asyncio.get_running_loop()
-    kv1_list = loop.run_in_executor(
-        None, client.secrets.kv.v1.list_secrets, "", mount_point
+    kv1_list = asyncio.create_task(
+        asyncio.to_thread(client.secrets.kv.v1.list_secrets, "", mount_point)
     )
-    kv2_list = loop.run_in_executor(
-        None, client.secrets.kv.v2.list_secrets, "", mount_point
+    kv2_list = asyncio.create_task(
+        asyncio.to_thread(client.secrets.kv.v2.list_secrets, "", mount_point)
     )
 
     try:
@@ -58,8 +57,7 @@ async def list_secrets(
 
     The returned list is sorted lexicographically.
     """
-    loop = asyncio.get_running_loop()
-    response = await loop.run_in_executor(None, kv.list_secrets, path, mount_point)
+    response = await asyncio.to_thread(kv.list_secrets, path, mount_point)
     return sorted(response["data"]["keys"])
 
 
