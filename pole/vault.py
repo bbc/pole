@@ -1,3 +1,7 @@
+"""
+Implementations of various higher-level Vault functions.
+"""
+
 from typing import AsyncIterator
 
 import asyncio
@@ -70,11 +74,14 @@ async def list_secrets_recursive(
     List the secrets recursively at a given path.
 
     Generates a series of path names for all secrets recursively starting at
-    the given path..
-
-    Lists only secret paths (directory paths are omitted).
+    the given path. Directories are not listed individually since vault has no
+    concept of an empty directory.
 
     Iteration is depth-first in hierarchical lexicographical order.
+
+    Internally, branches of the tree are enumerated in parallel for rapid
+    enumeration large trees. This will result in a large number of
+    nearly-simultaneous requests to vault being generated.
     """
     if not path.endswith("/"):
         path += "/"
