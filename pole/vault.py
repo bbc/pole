@@ -29,6 +29,10 @@ async def detect_kv_version(client: Client, mount_point: str = "secret") -> KvV1
     except InvalidPath:
         await kv1_list
         return client.secrets.kv.v1
+    except:
+        # kv2_list failed for some other reason (e.g. access denied), cleanup
+        kv1_list.cancel()
+        raise
 
 
 async def read_secret(kv: KvV1 | KvV2, path: str, mount_point: str = "secret"):

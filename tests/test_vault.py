@@ -11,6 +11,7 @@ import time
 from hvac import Client
 from hvac.api.secrets_engines.kv_v1 import KvV1
 from hvac.api.secrets_engines.kv_v2 import KvV2
+from hvac.exceptions import Forbidden
 
 from pole.vault import (
     detect_kv_version,
@@ -107,6 +108,11 @@ class TestDetectKvVersion:
         )
 
         assert isinstance(await detect_kv_version(vault, "my-secrets/"), KvV2)
+
+    async def test_no_access(self, vault: Client) -> None:
+        vault.token = "xxx"
+        with pytest.raises(Forbidden):
+            await detect_kv_version(vault, "my-secrets/")
 
 
 class TestReadSecret:
