@@ -161,22 +161,44 @@ class TestListSecrets:
         assert await list_secrets(vault.secrets.kv.v2, "bar/") == ["baz"]
 
 
-async def test_list_secrets_recursive(vault: Client) -> None:
-    vault.sys.enable_secrets_engine(
-        backend_type="kv",
-        path="secret/",
-        options={"version": "2"},
-    )
-    vault.secrets.kv.v2.create_or_update_secret("foo", {"a": "x"})
-    vault.secrets.kv.v2.create_or_update_secret("bar/baz", {"a": "x"})
-    vault.secrets.kv.v2.create_or_update_secret("bar/qux/quo", {"a": "x"})
+class TestListSecretsRecursive:
+    async def test_listing(self, vault: Client) -> None:
+        vault.sys.enable_secrets_engine(
+            backend_type="kv",
+            path="secret/",
+            options={"version": "2"},
+        )
+        vault.secrets.kv.v2.create_or_update_secret("foo", {"a": "x"})
+        vault.secrets.kv.v2.create_or_update_secret("bar/baz", {"a": "x"})
+        vault.secrets.kv.v2.create_or_update_secret("bar/qux/quo", {"a": "x"})
 
-    secrets = []
-    async for secret in list_secrets_recursive(vault.secrets.kv.v2):
-        secrets.append(secret)
+        secrets = []
+        async for secret in list_secrets_recursive(vault.secrets.kv.v2):
+            secrets.append(secret)
 
-    assert secrets == [
-        "bar/baz",
-        "bar/qux/quo",
-        "foo",
-    ]
+        assert secrets == [
+            "bar/baz",
+            "bar/qux/quo",
+            "foo",
+        ]
+
+    @pytest.mark.parametrize("trailing_slash", ["/", ""])
+    async def test_subdirectory(self, vault: Client, trailing_slash: str) -> None:
+        vault.sys.enable_secrets_engine(
+            backend_type="kv",
+            path="secret/",
+            options={"version": "2"},
+        )
+        vault.secrets.kv.v2.create_or_update_secret("foo", {"a": "x"})
+        vault.secrets.kv.v2.create_or_update_secret("bar/baz", {"a": "x"})
+        vault.secrets.kv.v2.create_or_update_secret("bar/qux/quo", {"a": "x"})
+
+        secrets = []
+        async for secret in list_secrets_recursive(
+            vault.secrets.kv.v2, "bar" + trailing_slash
+        ):
+            secrets.append(secret)
+        assert secrets == [
+            "baz",
+            "qux/quo",
+        ]
