@@ -1,6 +1,10 @@
-from typing import TypeVar, AsyncIterator, AsyncGenerator
+from typing import TypeVar, AsyncIterator, AsyncGenerator, Callable, Any, Iterator
 
 import asyncio
+import math
+import time
+import sys
+from contextlib import contextmanager
 
 
 T = TypeVar("T")
@@ -48,3 +52,36 @@ def eager_async_iter(
             raise
 
     return receiver()
+
+
+async def countdown(message: str, duration: float) -> None:
+    """
+    Print the supplied single-line message with ``.format()`` inserting the
+    current (integer) number of seconds remaining. The 's' named value will
+    expand to "s" when the remaining count is not 1 and the empty string
+    otherwise.
+
+    Clears the message at the end of the countdown.
+    """
+    end = time.monotonic() + duration
+    while True:
+        remaining = end - time.monotonic()
+        if remaining <= 0:
+            break
+
+        remaining_int = math.ceil(remaining)
+        sys.stdout.write(
+            # Move cursor to start of line, clear to end of line
+            "\033[G\033[K"
+            + message.format(
+                remaining_int,
+                s="s" if remaining_int != 1 else "",
+            )
+        )
+        sys.stdout.flush()
+
+        await asyncio.sleep(min(remaining, 1))
+
+    # Clear message
+    sys.stdout.write("\033[G\033[K")
+    sys.stdout.flush()
