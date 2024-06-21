@@ -238,7 +238,7 @@ async def async_main() -> None:
         default=None,
         help="""
             The vault server URL. If not given, uses the value in the
-            VAULT_ADDRESS environment variable.
+            VAULT_ADDR environment variable.
         """,
     )
     parser.add_argument(
@@ -246,7 +246,7 @@ async def async_main() -> None:
         default=None,
         help="""
             The vault token to use. If not given, uses the value in the
-            VAULT_ADDRESS environment variable or the configured Vault token
+            VAULT_TOKEN environment variable or the configured Vault token
             agent.
         """,
     )
