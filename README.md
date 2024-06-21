@@ -38,7 +38,6 @@ Reading values:
     hunter2
     
     $ pole get passwords/example password --copy
-    Selected passwords/example
     Copied password value to clipboard!
     Clipboard will be cleared in 30 seconds.
     
