@@ -152,9 +152,10 @@ async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
         await fzf.wait()
         raise
 
-    if stdout.strip() != "":
+    stdout_lines = stdout.decode("utf-8").splitlines()
+    if stdout_lines:
         # Get the value
-        args.path = stdout.decode("utf-8").splitlines()[0]
+        args.path = stdout_lines[0]
         await get_command(parser, args, kv)
     else:
         # Nothing selected!
