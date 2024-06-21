@@ -117,9 +117,13 @@ async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
 async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -> None:
     """Implements the 'fzf' command."""
     # Start fzf
+    history_file = Path(platformdirs.user_cache_dir("pole", "bbc")) / "fzf_history"
+    history_file.parent.mkdir(parents=True, exist_ok=True)
     try:
         fzf = await asyncio.create_subprocess_exec(
             "fzf",
+            "--history",
+            str(history_file),
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
         )
@@ -246,7 +250,7 @@ async def async_main() -> None:
     )
     ca_group = parser.add_mutually_exclusive_group()
     default_ca_path = (
-        Path(platformdirs.user_config_dir("pole", "BBC")) / "default_ca.pem"
+        Path(platformdirs.user_config_dir("pole", "bbc")) / "default_ca.pem"
     )
     ca_group.add_argument(
         "--certificate-authority",
@@ -441,7 +445,7 @@ async def async_main() -> None:
         "--rules",
         "-r",
         type=Path,
-        default=Path(platformdirs.user_config_dir("pole", "BBC")) / "guess",
+        default=Path(platformdirs.user_config_dir("pole", "bbc")) / "guess",
         help="""
             The directory from which to read *.toml files containing rules.
             Default %(default)s.
