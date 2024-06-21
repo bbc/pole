@@ -4,7 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pole"
-dependencies = ["hvac", "pyperclip"]
+dependencies = [
+    "hvac",
+    "pyperclip",
+    "platformdirs",
+    "tomli; python_version<'3.11'",
+]
 dynamic = ["version"]
 
 [tool.setuptools.dynamic]

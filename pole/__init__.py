@@ -3,9 +3,14 @@ __version__ = "0.0.1"
 import os
 import sys
 import asyncio
+import re
+import string
 from argparse import ArgumentParser, Namespace
 import urllib3
 import json
+from pathlib import Path
+
+import platformdirs
 
 from hvac import Client
 from hvac.api.secrets_engines.kv_v1 import KvV1
@@ -14,7 +19,8 @@ from hvac.exceptions import InvalidPath, Forbidden
 
 from pole.tables import dict_to_table
 from pole.async_utils import countdown
-from pole.clipboard import copy, temporarily_copy
+from pole.clipboard import copy, paste, temporarily_copy
+from pole.guess import guess, GuessError
 from pole.vault import (
     detect_kv_version,
     read_secret,
@@ -33,6 +39,36 @@ async def ls_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -
             print(key)
 
 
+def print_secret(secrets: dict[str, str], key: str | None, use_json: bool) -> None:
+    """Print a secret to stdout."""
+    # Print secrets to the terminal
+    if use_json:
+        if key is not None:
+            print(json.dumps(secrets[key]))
+        else:
+            print(json.dumps(secrets, indent=2))
+    else:
+        if key is not None:
+            print(secrets[key])
+        else:
+            print(dict_to_table(secrets))
+
+
+async def copy_secret(key: str, value: str, delay: float) -> None:
+    """Place a secret in the clipboard."""
+    if delay != 0:
+        async with temporarily_copy(value):
+            print(f"Copied {key} value to clipboard!")
+            await countdown(
+                "Clipboard will be cleared in {} second{s}.",
+                delay,
+            )
+            print(f"Clipboard cleared.")
+    else:
+        await copy(value)
+        print(f"Copied {key} value to clipboard!")
+
+
 async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -> None:
     """Implements the 'get' command."""
     secrets = await read_secret(kv, args.path, mount_point=args.mount)
@@ -48,8 +84,6 @@ async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
 
     if args.copy:
         # Place secrets into clipboard
-
-        # Get the secret to be copied
         if args.key is not None:
             key = args.key
             value = secrets[args.key]
@@ -62,29 +96,9 @@ async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
             key, value = secrets.copy().popitem()
 
         # Place in the clipboard
-        if args.clear_clipboard_delay != 0:
-            async with temporarily_copy(value):
-                print(f"Copied {key} to clipboard!")
-                await countdown(
-                    "Clipboard will be cleared in {} second{s}.",
-                    args.clear_clipboard_delay,
-                )
-                print(f"Clipboard cleared.")
-        else:
-            await copy(value)
-            print(f"Copied {key} to clipboard!")
+        await copy_secret(key, value, args.clear_clipboard_delay)
     else:
-        # Print secrets to the terminal
-        if args.json:
-            if args.key is not None:
-                print(json.dumps(secrets[args.key]))
-            else:
-                print(json.dumps(secrets, indent=2))
-        else:
-            if args.key is not None:
-                print(secrets[args.key])
-            else:
-                print(dict_to_table(secrets))
+        print_secret(secrets, args.key, args.json)
 
 
 async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -> None:
@@ -105,6 +119,7 @@ async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
 
     try:
         # Enumerate all secrets
+        assert fzf.stdin is not None
         async for path in list_secrets_recursive(kv, "", mount_point=args.mount):
             if fzf.returncode is not None:  # FZF already quit!
                 break
@@ -128,6 +143,67 @@ async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
         # Nothing selected!
         print("Error: No secret selected.", file=sys.stderr)
         sys.exit(1)
+
+
+async def guess_command(
+    parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2
+) -> None:
+    """Implements the 'guess' command."""
+
+    # Use hints from clipboard if none given
+    hints: tuple[str, ...]
+    if args.hint:
+        hints = (args.hint,)
+    else:
+        hints = await paste()
+
+    # Find the first guessed secret which actually exists
+    for path, keys in guess(args.rules, hints):
+        try:
+            secrets = await read_secret(kv, path, mount_point=args.mount)
+            break
+        except InvalidPath:
+            continue
+    else:
+        print(f"Error: No matching rules.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Guessed {path}")
+
+    # Verify key is valid if given
+    if args.key is not None:
+        if args.key not in secrets:
+            print(
+                f"Error: Unknown key {args.key}, expected one of {', '.join(secrets)}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+    if args.copy:
+        # Work out which key to pick
+        if args.key is not None:
+            # Key specified, use that one
+            key = args.key
+            value = secrets[args.key]
+        elif len(secrets) == 1:
+            # Only one secret, use that one
+            key, value = secrets.copy().popitem()
+        else:
+            # Multiple secrets. See if any are mentioned by the matched rule.
+            for key in keys:
+                if key in secrets:
+                    value = secrets[key]
+                    break
+            else:
+                print(
+                    f"Error: Secret has multiple keys ({', '.join(secrets)}). Pick one."
+                )
+                sys.exit(1)
+
+        # Place in the clipboard
+        await copy_secret(key, value, args.clear_clipboard_delay)
+    else:
+        print_secret(secrets, args.key, args.json)
 
 
 async def async_main() -> None:
@@ -285,6 +361,36 @@ async def async_main() -> None:
     fzf_parser.set_defaults(command=fzf_command)
     add_get_non_path_arguments(fzf_parser)
 
+    guess_parser = subparsers.add_parser(
+        "guess",
+        aliases=["auto"],
+        help="""
+            Use a user-defined set of rules to guess the appropriate secret to
+            fetch.
+        """,
+    )
+    guess_parser.set_defaults(command=guess_command)
+    guess_parser.add_argument(
+        "hint",
+        nargs="?",
+        default="",
+        help="""
+            The 'hint' to provide to the user-defined matching rules. If
+            omitted (or an empty string), uses the value in the clipboard.
+        """,
+    )
+    guess_parser.add_argument(
+        "--rules",
+        "-r",
+        type=Path,
+        default=Path(platformdirs.user_config_dir("pole", "BBC")) / "guess",
+        help="""
+            The directory from which to read *.toml files containing rules.
+            Default %(default)s.
+        """,
+    )
+    add_get_non_path_arguments(guess_parser)
+
     args = parser.parse_args()
 
     if args.no_verify:
@@ -314,6 +420,9 @@ async def async_main() -> None:
         sys.exit(1)
     except Forbidden as exc:
         print(f"Error: Forbidden: {exc}", file=sys.stderr)
+        sys.exit(1)
+    except GuessError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 
 
