@@ -19,6 +19,8 @@ from hvac.exceptions import InvalidPath, Forbidden
 
 from requests.exceptions import SSLError
 
+from notifypy import Notify
+
 from pole.text_art import dict_to_table, PathsToTrees
 from pole.async_utils import countdown
 from pole.clipboard import copy, paste, temporarily_copy
@@ -67,11 +69,29 @@ def print_secret(secrets: dict[str, str], key: str | None, use_json: bool) -> No
             print(dict_to_table(secrets))
 
 
-async def copy_secret(key: str, value: str, delay: float) -> None:
+def show_notification(title: str, message: str = "") -> None:
+    """Show a desktop notification."""
+    n = Notify()
+    n.title = title
+    n.message = message
+    n.send(block=False)
+
+
+async def copy_secret(
+    path: str, key: str, value: str, delay: float, notify: bool
+) -> None:
     """Place a secret in the clipboard."""
     if delay != 0:
         async with temporarily_copy(value):
             print(f"Copied {key} value to clipboard!")
+            if notify:
+                show_notification(
+                    f"Secret copied",
+                    (
+                        f"{key} from {path}\n"
+                        f"Clipboard will be cleared in {delay} seconds."
+                    ),
+                )
             await countdown(
                 "Clipboard will be cleared in {} second{s}.",
                 delay,
@@ -80,6 +100,8 @@ async def copy_secret(key: str, value: str, delay: float) -> None:
     else:
         await copy(value)
         print(f"Copied {key} value to clipboard!")
+        if notify:
+            show_notification(f"Secret copied", f"{key} from {path}")
 
 
 async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -> None:
@@ -93,6 +115,10 @@ async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
                 f"Error: Unknown key {args.key}, expected one of {', '.join(secrets)}",
                 file=sys.stderr,
             )
+            if args.notify:
+                show_notification(
+                    "Error: Invalid key", f"{args.path} does not have key {args.key}"
+                )
             sys.exit(1)
 
     if args.copy:
@@ -105,11 +131,17 @@ async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
                 print(
                     f"Error: Secret has multiple keys ({', '.join(secrets)}). Pick one."
                 )
+                if args.notify:
+                    show_notification(
+                        "Error: Ambiguous secret", f"{args.path} has multiple keys"
+                    )
                 sys.exit(1)
             key, value = secrets.copy().popitem()
 
         # Place in the clipboard
-        await copy_secret(key, value, args.clear_clipboard_delay)
+        await copy_secret(
+            args.path, key, value, args.clear_clipboard_delay, args.notify
+        )
     else:
         print_secret(secrets, args.key, args.json)
 
@@ -177,14 +209,23 @@ async def guess_command(
         hints = await paste()
 
     # Find the first guessed secret which actually exists
+    matched_at_least_one_rule = False
     for path, keys in guess(args.rules, hints):
+        matched_at_least_one_rule = True
         try:
             secrets = await read_secret(kv, path, mount_point=args.mount)
             break
         except InvalidPath:
             continue
     else:
-        print(f"Error: No matching rules.", file=sys.stderr)
+        if matched_at_least_one_rule:
+            print(f"Error: Rules matched but secrets not in vault.", file=sys.stderr)
+            if args.notify:
+                show_notification("Error: Rules matched but secret not in vault")
+        else:
+            print(f"Error: No rules matched.", file=sys.stderr)
+            if args.notify:
+                show_notification("Error: No rules matched")
         sys.exit(1)
 
     print(f"Guessed {path}")
@@ -196,6 +237,10 @@ async def guess_command(
                 f"Error: Unknown key {args.key}, expected one of {', '.join(secrets)}",
                 file=sys.stderr,
             )
+            if args.notify:
+                show_notification(
+                    "Error: Invalid key", f"{path} does not have key {args.key}"
+                )
             sys.exit(1)
 
     if args.copy:
@@ -217,10 +262,14 @@ async def guess_command(
                 print(
                     f"Error: Secret has multiple keys ({', '.join(secrets)}). Pick one."
                 )
+                if args.notify:
+                    show_notification(
+                        "Error: Ambiguous secret", f"{path} has multiple keys"
+                    )
                 sys.exit(1)
 
         # Place in the clipboard
-        await copy_secret(key, value, args.clear_clipboard_delay)
+        await copy_secret(path, key, value, args.clear_clipboard_delay, args.notify)
     else:
         print_secret(secrets, args.key, args.json)
 
@@ -413,6 +462,16 @@ async def async_main() -> None:
                 %(default)s.
             """,
         )
+        get_parser.add_argument(
+            "--notify",
+            "-n",
+            action="store_true",
+            default=False,
+            help="""
+                When used with --copy, produces a desktop notification when a
+                value is copied.
+            """,
+        )
 
     add_get_non_path_arguments(get_parser)
 
@@ -488,6 +547,8 @@ async def async_main() -> None:
         await args.command(parser, args, kv)
     except InvalidPath as exc:
         print(f"Error: Invalid path: {exc}", file=sys.stderr)
+        if args.notify:
+            show_notification("Error: Secret does not exist")
         sys.exit(1)
     except Forbidden as exc:
         print(f"Error: Forbidden: {exc}", file=sys.stderr)

@@ -158,11 +158,14 @@ like:
 
 As with the `get` command, the `--copy` argument can be used to place the
 matched secret in the clipboard. Further, if no argument is given to `pole
-guess`, the value to search with is taken from the clipboard. For example, you
-could select and copy the URL from your browser then run the following to put
-the password in your clipboard:
+guess`, the value to search with is taken from the clipboard. You can also add
+the `--notify` argument to report success or failure via a desktop
+notification.
 
-    $ pole guess --copy
+For example, you could select and copy the URL from your browser then run the
+following to put the password in your clipboard:
+
+    $ pole guess --copy --notify
     Guessed passwords/ipmi/compute103
     Copied password value to clipboard!
     Clipboard will be cleared in 30 seconds.
