@@ -61,6 +61,11 @@ search](https://github.com/junegunn/fzf):
     > passwords/example
     1/4
     > examp
+    Selected passwords/example
+    Key       Value
+    ========  =======
+    username  AzureDiamond
+    password  hunter2
 
 More boringly listing secrets:
 
@@ -148,7 +153,7 @@ like:
     $ pole guess "http://compute103-ipmi.hosts.example.com/login"
     Guessed passwords/ipmi/compute103
     Key       Value
-    =====     =============
+    ========  =============
     password  verysecure123
 
 As with the `get` command, the `--copy` argument can be used to place the
@@ -159,7 +164,7 @@ the password in your clipboard:
 
     $ pole guess --copy
     Guessed passwords/ipmi/compute103
-    Copied ADMIN value to clipboard!
+    Copied password value to clipboard!
     Clipboard will be cleared in 30 seconds.
 
 > *Tip:* Try assigning the above to a keyboard shortcut in your desktop
@@ -192,7 +197,7 @@ These rules would then allow you to do things like:
     $ pole guess "http://compute103-ipmi.hosts.example.com/login"
     Guessed passwords/ipmi/compute103
     Key       Value
-    =====     =============
+    ========  =============
     password  verysecure123
 
 The `rule` tables may have the following keys:
