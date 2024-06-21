@@ -172,13 +172,16 @@ class TestRule:
         rule = Rule(
             rule_file=Path("example.toml"),
             name="my-rule",
-            pattern=re.compile("(foo)|(bar)"),
+            pattern=re.compile("(foo)|(bar)|baz"),
             path_templates=["foo={1}", "bar={2}"],
         )
 
-        # Non-matching
+        # Matching
         assert list(rule.guess("foo")) == ["foo=foo"]
         assert list(rule.guess("bar")) == ["bar=bar"]
+
+        # Matches the regex but none of the paths are valid!
+        assert list(rule.guess("baz")) == []
 
 
 class TestParseRule:
