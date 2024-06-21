@@ -156,6 +156,7 @@ async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
     if stdout_lines:
         # Get the value
         args.path = stdout_lines[0]
+        print(f"Selected {args.path}")
         await get_command(parser, args, kv)
     else:
         # Nothing selected!
