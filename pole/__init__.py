@@ -219,9 +219,9 @@ async def guess_command(
             continue
     else:
         if matched_at_least_one_rule:
-            print(f"Error: Rules matched but secrets not in vault.", file=sys.stderr)
+            print(f"Error: Rules matched but secret not found in vault.", file=sys.stderr)
             if args.notify:
-                show_notification("Error: Rules matched but secret not in vault")
+                show_notification("Error: Rules matched but secret not found in vault")
         else:
             print(f"Error: No rules matched.", file=sys.stderr)
             if args.notify:
