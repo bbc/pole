@@ -17,7 +17,7 @@ from hvac.api.secrets_engines.kv_v1 import KvV1
 from hvac.api.secrets_engines.kv_v2 import KvV2
 from hvac.exceptions import InvalidPath, Forbidden
 
-from pole.tables import dict_to_table
+from pole.text_art import dict_to_table, PathsToTrees
 from pole.async_utils import countdown
 from pole.clipboard import copy, paste, temporarily_copy
 from pole.guess import guess, GuessError
@@ -37,6 +37,17 @@ async def ls_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -
     else:
         for key in await list_secrets(kv, args.path, mount_point=args.mount):
             print(key)
+
+
+async def tree_command(
+    parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2
+) -> None:
+    """Implements the 'tree' command."""
+    ptt = PathsToTrees()
+    print(args.path.rstrip("/") + "/")
+    async for path in list_secrets_recursive(kv, args.path, mount_point=args.mount):
+        print(ptt.push(path), end="")
+    print(ptt.close())
 
 
 def print_secret(secrets: dict[str, str], key: str | None, use_json: bool) -> None:
@@ -285,6 +296,22 @@ async def async_main() -> None:
         default=False,
         help="""
             List the contents of the provided directory recursively.
+        """,
+    )
+
+    tree_parser = subparsers.add_parser(
+        "tree",
+        help="""
+            Recursively visualise the tree of secrets at a given path.
+        """,
+    )
+    tree_parser.set_defaults(command=tree_command)
+    tree_parser.add_argument(
+        "path",
+        nargs="?",
+        default="",
+        help="""
+            The path to list. Defaults to the root of the kv store.
         """,
     )
 

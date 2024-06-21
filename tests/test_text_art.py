@@ -1,6 +1,8 @@
+import pytest
+
 from textwrap import dedent
 
-from pole.tables import dict_to_table
+from pole.text_art import dict_to_table, PathsToTrees
 
 
 class TestDictToTable:
@@ -67,3 +69,53 @@ class TestDictToTable:
             """
             ).strip()
         )
+
+
+@pytest.mark.parametrize(
+    "paths, exp",
+    [
+        # Empty
+        ([], ""),
+        # Top-level only
+        (
+            ["foo"],
+            """
+                └── foo
+            """,
+        ),
+        (
+            ["foo", "bar"],
+            """
+                ├── foo
+                └── bar
+            """,
+        ),
+        # Nesting
+        (
+            [
+                "foo/bar",
+                "foo/baz",
+                "foo/qux/deep/one",
+                "foo/qux/deep/two",
+                "foo/qux/deep/three",
+                "foo/quo",
+                "top",
+            ],
+            """
+                ├── foo/
+                │   ├── bar
+                │   ├── baz
+                │   ├── qux/
+                │   │   ├── deep/
+                │   │   │   ├── one
+                │   │   │   ├── two
+                │   │   │   └── three
+                │   └── quo
+                └── top
+            """,
+        ),
+    ],
+)
+def test_paths_to_trees(paths: list[str], exp: str) -> None:
+    ptt = PathsToTrees()
+    assert "".join(map(ptt.push, paths)) + ptt.close() == dedent(exp).strip()
