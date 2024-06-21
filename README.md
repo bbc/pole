@@ -30,7 +30,7 @@ Reading values:
 
     $ pole get passwords/example
     Key       Value
-    ========  =======
+    ========  ============
     username  AzureDiamond
     password  hunter2
     
@@ -62,7 +62,7 @@ search](https://github.com/junegunn/fzf):
     > examp
     Selected passwords/example
     Key       Value
-    ========  =======
+    ========  ============
     username  AzureDiamond
     password  hunter2
 
@@ -85,7 +85,7 @@ More boringly listing secrets:
 Using [user-defined rules](#secret-guessing) to lookup relevant secrets, e.g.
 based on URLs or SSH invocations:
 
-    $ pole --no-verify guess "https://compute116-ipmi.example.com/#/login"
+    $ pole guess "https://compute116-ipmi.example.com/#/login"
     Guessed passwords/ipmi/compute116
     Key       Value
     ========  =====
