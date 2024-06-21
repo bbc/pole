@@ -17,6 +17,8 @@ from hvac.api.secrets_engines.kv_v1 import KvV1
 from hvac.api.secrets_engines.kv_v2 import KvV2
 from hvac.exceptions import InvalidPath, Forbidden
 
+from requests.exceptions import SSLError
+
 from pole.text_art import dict_to_table, PathsToTrees
 from pole.async_utils import countdown
 from pole.clipboard import copy, paste, temporarily_copy
@@ -220,8 +222,8 @@ async def guess_command(
 async def async_main() -> None:
     parser = ArgumentParser(
         description="""
-            A high-level `vault` wrapper for simplified day-to-day reading of
-            secrets in a kv store.
+            A high-level `vault` tool for simplified manual reading of secrets
+            in a kv store.
         """
     )
 
@@ -242,12 +244,42 @@ async def async_main() -> None:
             agent.
         """,
     )
-    parser.add_argument(
+    ca_group = parser.add_mutually_exclusive_group()
+    default_ca_path = (
+        Path(platformdirs.user_config_dir("pole", "BBC")) / "default_ca.pem"
+    )
+    ca_group.add_argument(
+        "--certificate-authority",
+        "--ca",
+        metavar="PEM",
+        type=str,
+        default=os.environ.get(
+            "POLE_VAULT_CA",
+            str(default_ca_path) if default_ca_path.is_file() else None,
+        ),
+        help=f"""
+            If provided, the certificate bundle file (*.pem) to use to verify
+            TLS connections to Vault.  Overrides the value in the POLE_VAULT_CA
+            environment variable. The environment variable further overrides
+            the certificate in {default_ca_path} (if specified). If none of
+            these are specified, falls back to using the Certifi certificate
+            bundle.
+        """,
+    )
+    ca_group.add_argument(
+        "--certifi",
+        action="store_true",
+        default=False,
+        help="""
+            Force use of the default certifi certificate bundle.
+        """,
+    )
+    ca_group.add_argument(
         "--no-verify",
         action="store_true",
         default=False,
         help="""
-            If given, do not verify HTTPS TLS certificates.
+            If given, do not verify HTTPS TLS certificates. Insecure.
         """,
     )
     parser.add_argument(
@@ -380,7 +412,7 @@ async def async_main() -> None:
 
     fzf_parser = subparsers.add_parser(
         "fzf",
-        aliases=["find", "search"],
+        aliases=["find"],
         help="""
             Search for and then print a secret using fzf (fuzzy find).
         """,
@@ -390,7 +422,6 @@ async def async_main() -> None:
 
     guess_parser = subparsers.add_parser(
         "guess",
-        aliases=["auto"],
         help="""
             Use a user-defined set of rules to guess the appropriate secret to
             fetch.
@@ -423,10 +454,17 @@ async def async_main() -> None:
     if args.no_verify:
         urllib3.disable_warnings()
 
+    if args.certifi:
+        verify = True
+    elif args.certificate_authority is not None:
+        verify = args.certificate_authority
+    else:
+        verify = not args.no_verify
+
     client = Client(
         url=args.address,
         token=args.token,
-        verify=not args.no_verify,
+        verify=verify,
     )
 
     try:
@@ -450,6 +488,13 @@ async def async_main() -> None:
         sys.exit(1)
     except GuessError as exc:
         print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    except SSLError as exc:
+        print(
+            f"Error: SSL Error ({exc})\n"
+            f"Hint: If using a private CA, use --certificate-authority to specify the CA",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
 
