@@ -82,20 +82,22 @@ async def copy_secret(
 ) -> None:
     """Place a secret in the clipboard."""
     if delay != 0:
-        async with clipboard.temporarily_copy(value):
-            print(f"Copied {key} value to clipboard!")
-            if notify:
-                show_notification(
-                    f"Secret copied",
-                    (
-                        f"{key} from {path}\n"
-                        f"Clipboard will be cleared in {delay} seconds."
-                    ),
+        try:
+            async with clipboard.temporarily_copy(value):
+                print(f"Copied {key} value to clipboard!")
+                if notify:
+                    show_notification(
+                        f"Secret copied",
+                        (
+                            f"{key} from {path}\n"
+                            f"Clipboard will be cleared in {delay} seconds."
+                        ),
+                    )
+                await countdown(
+                    "Clipboard will be cleared in {} second{s}.",
+                    delay,
                 )
-            await countdown(
-                "Clipboard will be cleared in {} second{s}.",
-                delay,
-            )
+        finally:
             print(f"Clipboard cleared.")
     else:
         await clipboard.copy(value)
@@ -570,4 +572,8 @@ async def async_main(argv: list[str] | None) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
-    asyncio.run(async_main(argv))
+    try:
+        asyncio.run(async_main(argv))
+    except KeyboardInterrupt:
+        # Don't produce verbose traceback on keyboard interrupt
+        sys.exit(1)
