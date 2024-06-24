@@ -460,6 +460,53 @@ class TestFzf:
             ).lstrip()
         )
 
+    def test_custom_command(
+        self,
+        secrets: SecretsDict,
+        capsys: Any,
+        monkeypatch: Any,
+        tmp_path: Path,
+    ) -> None:
+        cmd = tmp_path / "foobar"
+        cmd.write_text(
+            dedent(
+                f"""
+                    #!/bin/sh
+                    while read line; do
+                        echo "$line" >> "{tmp_path}/lines"
+                    done
+                    echo "key_count/two"
+                """
+            ).lstrip()
+        )
+        cmd.chmod(cmd.stat().st_mode | stat.S_IEXEC)
+        monkeypatch.setenv("PATH", str(tmp_path), prepend=":")
+
+        main(["fzf", "--filter-command", "foobar"])
+
+        assert (tmp_path / "lines").read_text().splitlines() == [
+            "key_count/one",
+            "key_count/two",
+            "key_length/long",
+            "key_length/short",
+            "top_level",
+        ]
+
+        out, err = capsys.readouterr()
+        assert err == ""
+        assert (
+            out
+            == dedent(
+                """
+                    Selected key_count/two
+                    Key  Value
+                    ===  =====
+                    foo  bar
+                    qux  quo
+                """
+            ).lstrip()
+        )
+
     def test_value_not_selected(
         self,
         secrets: SecretsDict,
