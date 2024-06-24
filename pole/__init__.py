@@ -151,20 +151,28 @@ async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
 
 async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -> None:
     """Implements the 'fzf' command."""
-    # Start fzf
-    history_file = Path(platformdirs.user_cache_dir("pole", "bbc")) / "fzf_history"
-    history_file.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        fzf = await asyncio.create_subprocess_exec(
+    # Determine the filteirng command to use
+    if args.filter_command:
+        filter_command = args.filter_command
+    else:
+        history_file = Path(platformdirs.user_cache_dir("pole", "bbc")) / "fzf_history"
+        history_file.parent.mkdir(parents=True, exist_ok=True)
+        filter_command = [
             "fzf",
             "--history",
             str(history_file),
+        ]
+
+    # Start fzf
+    try:
+        fzf = await asyncio.create_subprocess_exec(
+            *filter_command,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
         )
     except FileNotFoundError:
         print(
-            "Error: 'fzf' must be installed to use this feature.",
+            f"Error: '{filter_command[0]}' must be installed to use this feature.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -490,6 +498,19 @@ async def async_main(argv: list[str] | None) -> None:
     )
     fzf_parser.set_defaults(command=fzf_command)
     add_get_non_path_arguments(fzf_parser)
+    fzf_parser.add_argument(
+        "--filter-command",
+        "-f",
+        action="append",
+        default=[],
+        help="""
+            Specify an alternative interactive filtering command to use in
+            place of fzf (e.g. dmenu). Use this argument multiple times to
+            specify additional arguments to pass to the command. The command
+            will be passed a series of secret names on stdin and must report
+            the chosen secret in a single line on stdout.
+        """,
+    )
 
     guess_parser = subparsers.add_parser(
         "guess",
