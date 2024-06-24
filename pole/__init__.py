@@ -19,11 +19,11 @@ from hvac.exceptions import InvalidPath, Forbidden
 
 from requests.exceptions import SSLError
 
-from notifypy import Notify
+from notifypy import Notify  # type: ignore
 
 from pole.text_art import dict_to_table, PathsToTrees
 from pole.async_utils import countdown
-from pole.clipboard import copy, paste, temporarily_copy
+from pole import clipboard
 from pole.guess import guess, GuessError
 from pole.vault import (
     detect_kv_version,
@@ -82,7 +82,7 @@ async def copy_secret(
 ) -> None:
     """Place a secret in the clipboard."""
     if delay != 0:
-        async with temporarily_copy(value):
+        async with clipboard.temporarily_copy(value):
             print(f"Copied {key} value to clipboard!")
             if notify:
                 show_notification(
@@ -98,7 +98,7 @@ async def copy_secret(
             )
             print(f"Clipboard cleared.")
     else:
-        await copy(value)
+        await clipboard.copy(value)
         print(f"Copied {key} value to clipboard!")
         if notify:
             show_notification(f"Secret copied", f"{key} from {path}")
@@ -129,7 +129,8 @@ async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
         else:
             if len(secrets) != 1:
                 print(
-                    f"Error: Secret has multiple keys ({', '.join(secrets)}). Pick one."
+                    f"Error: Secret has multiple keys ({', '.join(secrets)}). Pick one.",
+                    file=sys.stderr,
                 )
                 if args.notify:
                     show_notification(
@@ -161,7 +162,7 @@ async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
         )
     except FileNotFoundError:
         print(
-            "Error: The 'fzf' command must be installed to use this feature.",
+            "Error: 'fzf' must be installed to use this feature.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -206,7 +207,7 @@ async def guess_command(
     if args.hint:
         hints = (args.hint,)
     else:
-        hints = await paste()
+        hints = await clipboard.paste()
 
     # Find the first guessed secret which actually exists
     matched_at_least_one_rule = False
@@ -219,7 +220,9 @@ async def guess_command(
             continue
     else:
         if matched_at_least_one_rule:
-            print(f"Error: Rules matched but secret not found in vault.", file=sys.stderr)
+            print(
+                f"Error: Rules matched but secret not found in vault.", file=sys.stderr
+            )
             if args.notify:
                 show_notification("Error: Rules matched but secret not found in vault")
         else:
@@ -260,7 +263,8 @@ async def guess_command(
                     break
             else:
                 print(
-                    f"Error: Secret has multiple keys ({', '.join(secrets)}). Pick one."
+                    f"Error: Secret has multiple keys ({', '.join(secrets)}). Pick one.",
+                    file=sys.stderr,
                 )
                 if args.notify:
                     show_notification(
@@ -274,7 +278,7 @@ async def guess_command(
         print_secret(secrets, args.key, args.json)
 
 
-async def async_main() -> None:
+async def async_main(argv: list[str] | None) -> None:
     parser = ArgumentParser(
         description="""
             A high-level `vault` tool for simplified manual reading of secrets
@@ -514,7 +518,7 @@ async def async_main() -> None:
     )
     add_get_non_path_arguments(guess_parser)
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.no_verify:
         urllib3.disable_warnings()
@@ -565,5 +569,5 @@ async def async_main() -> None:
         sys.exit(1)
 
 
-def main() -> None:
-    asyncio.run(async_main())
+def main(argv: list[str] | None = None) -> None:
+    asyncio.run(async_main(argv))
