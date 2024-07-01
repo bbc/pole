@@ -159,6 +159,9 @@ async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
         history_file.parent.mkdir(parents=True, exist_ok=True)
         filter_command = [
             "fzf",
+            "--query",
+            args.search,
+            "--select-1",  # If query already returns one result, select immediately
             "--history",
             str(history_file),
         ]
@@ -493,10 +496,19 @@ async def async_main(argv: list[str] | None) -> None:
         "fzf",
         aliases=["find"],
         help="""
-            Search for and then print a secret using fzf (fuzzy find).
+            Search for and then print a secret using fzf (fuzzy find) or
+            similar tools (e.g. dmenu).
         """,
     )
     fzf_parser.set_defaults(command=fzf_command)
+    fzf_parser.add_argument(
+        "search",
+        nargs="?",
+        default="",
+        help="""
+            The initial query to enter into fzf.
+        """,
+    )
     add_get_non_path_arguments(fzf_parser)
     fzf_parser.add_argument(
         "--filter-command",
