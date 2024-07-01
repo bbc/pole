@@ -151,20 +151,27 @@ async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
 
 async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -> None:
     """Implements the 'fzf' command."""
+    history_file = Path(platformdirs.user_cache_dir("pole", "bbc")) / "fzf_history"
+    history_file.parent.mkdir(parents=True, exist_ok=True)
+
     # Determine the filteirng command to use
     if args.filter_command:
         filter_command = args.filter_command
     else:
-        history_file = Path(platformdirs.user_cache_dir("pole", "bbc")) / "fzf_history"
-        history_file.parent.mkdir(parents=True, exist_ok=True)
         filter_command = [
             "fzf",
             "--query",
-            args.search,
-            "--select-1",  # If query already returns one result, select immediately
+            "{search}",
+            "--select-1",  # If query only returns one result, select it immediately
             "--history",
-            str(history_file),
+            "{history}",
         ]
+
+    # Substitute search and history values
+    filter_command = [
+        arg.format(search=args.search, history=str(history_file))
+        for arg in filter_command
+    ]
 
     # Start fzf
     try:
@@ -518,9 +525,13 @@ async def async_main(argv: list[str] | None) -> None:
         help="""
             Specify an alternative interactive filtering command to use in
             place of fzf (e.g. dmenu). Use this argument multiple times to
-            specify additional arguments to pass to the command. The command
-            will be passed a series of secret names on stdin and must report
-            the chosen secret in a single line on stdout.
+            specify additional arguments to pass to the command. In the
+            provided arguments, '{search}' is substituted for the user's passed
+            search string (an empty string if not supplied) and '{history}' for
+            a file to use as a history file. Use '{{' and '}}' to write literal
+            '{' and '}' characters. The command will be passed a series of
+            secret names on stdin and must report the chosen secret in a single
+            line on stdout.
         """,
     )
 
