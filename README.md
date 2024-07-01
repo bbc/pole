@@ -172,6 +172,12 @@ following to put the password in your clipboard:
 > *Tip:* Try assigning the above to a keyboard shortcut in your desktop
 > environment!
 
+> *Note:* For
+> [reasons](https://github.com/ms7m/notify-py/blob/67dacb8d6aaf58288edf18426e540b085ec7b8a1/notifypy/os_notifiers/macos.py#L60),
+> under MacOS notifications will be reported as coming from
+> [`notificator`](https://github.com/vitorgalvao/notificator). You may need to
+> enable notifications from this service.
+
 
 ### Defining guessing rules
 
