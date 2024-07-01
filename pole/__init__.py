@@ -574,7 +574,7 @@ async def async_main(argv: list[str] | None) -> None:
         await args.command(parser, args, kv)
     except InvalidPath as exc:
         print(f"Error: Invalid path: {exc}", file=sys.stderr)
-        if args.notify:
+        if getattr(args, "notify", False):
             show_notification("Error: Secret does not exist")
         sys.exit(1)
     except Forbidden as exc:
