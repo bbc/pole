@@ -56,7 +56,7 @@ Reading values:
 Searching for secrets using [fzf fuzzy
 search](https://github.com/junegunn/fzf):
 
-    $ pole ls find
+    $ pole find
     > passwords/example
     1/4
     > examp
