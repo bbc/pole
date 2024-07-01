@@ -133,8 +133,8 @@ order of precedence):
 * Set the `--certificate-authority` argument
 * Set the `POLE_VAULT_CA` environment variable
 * Place the certificate in `default_ca.pem` in the pole config directory (on
-  Linux this is `~/.config/pole/`, see `pole --help` for your local platform's
-  location).
+  Linux this is `~/.config/pole/` and MacOS it is `~/Library/Application
+  Support/pole/`, see `pole --help` for your local platform's location).
 
 
 Secret guessing
@@ -177,9 +177,10 @@ following to put the password in your clipboard:
 
 Guessing rules are defined in [`*.toml`](https://toml.io/en/) files in the
 `guess` subdirectory of pole's configuration directory. On Linux this will be
-`~/.config/pole/guess`, on other platforms see `--rules` in `pole guess
---help`. Alternatively you can specify an alternative directory using the
-`--rules` argument.
+`~/.config/pole/guess`, on MacOS its `~/Library/Application
+Support/pole/guess`, on other platforms see `--rules` in `pole guess --help`.
+Alternatively you can specify an alternative directory using the `--rules`
+argument.
 
 A guessing rule file is a simple [TOML](https://toml.io/en/) which contains one
 or many rules. An example rules file looks might look like this:
