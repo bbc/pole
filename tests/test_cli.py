@@ -475,6 +475,7 @@ class TestFzf:
                     while read line; do
                         echo "$line" >> "{tmp_path}/lines"
                     done
+                    echo "$1" >> "{tmp_path}/search"
                     echo "key_count/two"
                 """
             ).lstrip()
@@ -482,7 +483,16 @@ class TestFzf:
         cmd.chmod(cmd.stat().st_mode | stat.S_IEXEC)
         monkeypatch.setenv("PATH", str(tmp_path), prepend=":")
 
-        main(["fzf", "--filter-command", "foobar"])
+        main(
+            [
+                "fzf",
+                "--filter-command",
+                "foobar",
+                "--filter-command",
+                "{search}",
+                "foobar",
+            ]
+        )
 
         assert (tmp_path / "lines").read_text().splitlines() == [
             "key_count/one",
@@ -491,6 +501,7 @@ class TestFzf:
             "key_length/short",
             "top_level",
         ]
+        assert (tmp_path / "search").read_text() == "foobar\n"
 
         out, err = capsys.readouterr()
         assert err == ""
