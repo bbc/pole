@@ -132,9 +132,8 @@ order of precedence):
 
 * Set the `--certificate-authority` argument
 * Set the `POLE_VAULT_CA` environment variable
-* Place the certificate in `default_ca.pem` in the pole config directory (on
-  Linux this is `~/.config/pole/` and MacOS it is `~/Library/Application
-  Support/pole/`, see `pole --help` for your local platform's location).
+* Place the certificate in `default_ca.pem` in the pole config directory (see
+  [Pole configuration directory](#pole-configuration-directory).
 
 
 Secret guessing
@@ -182,11 +181,9 @@ following to put the password in your clipboard:
 ### Defining guessing rules
 
 Guessing rules are defined in [`*.toml`](https://toml.io/en/) files in the
-`guess` subdirectory of pole's configuration directory. On Linux this will be
-`~/.config/pole/guess`, on MacOS its `~/Library/Application
-Support/pole/guess`, on other platforms see `--rules` in `pole guess --help`.
-Alternatively you can specify an alternative directory using the `--rules`
-argument.
+`guess` subdirectory of [Pole's configuration
+directory](#pole-configuration-directory).  Alternatively you can specify an
+alternative directory using the `--rules` argument.
 
 A guessing rule file is a simple [TOML](https://toml.io/en/) which contains one
 or many rules. An example rules file looks might look like this:
@@ -322,3 +319,34 @@ precedence.
 > is the one which is automatically populated when selecting text and pasted
 > using middle-click. The system clipboard is the one usually populated and
 > pasted from using shortcuts like Ctrl+C and Ctrl+V.
+
+
+Pole configuration directory
+----------------------------
+
+Pole obtains its configuration (e.g. for [certificates](#configuration) or
+[guessing rules](#secret-guessing)) from the highest-precedence Pole
+configuation directory which exists on the system.
+
+The highest precedence configuration directory is the user configuration
+directory which is, for example:
+
+    * `~/.config/pole` (under Linux)
+    * `~/Library/Application Support/pole/` (under MacOS)
+
+The lowest precedence configuration directory is the system configuration
+directory which is, for example:
+
+    * `/etc/xdg/pole` (under Linux -- note the [XDG base
+      directory](https://specifications.freedesktop.org/basedir-spec/latest/)!)
+    * `/Library/Application Support/pole` (under MacOS)
+
+The list of configuration directories for your system are enumerated at the top
+of the `pole --help` output.
+
+If configuration (be it rules or certificates) exists in multiple places, only
+the configuration which exists in the highest precedence configuration
+directory will be used. The contents of all other configuration directories are
+ignored (i.e. we don't combine system and user configurations). For example,
+you can suppress any system-defined configuration by creating an empty
+user-level configuration directory.
