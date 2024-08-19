@@ -299,10 +299,20 @@ async def guess_command(
 
 
 async def async_main(argv: list[str] | None) -> None:
+    pd = platformdirs.PlatformDirs("pole", "bbc", multipath=True)
+    config_dirs = list(
+        map(
+            Path,
+            os.pathsep.join([pd.user_config_dir, pd.site_config_dir]).split(os.pathsep),
+        )
+    )
+    config_dirs_existing = [p for p in config_dirs if p.is_dir()]
+
     parser = ArgumentParser(
-        description="""
+        description=f"""
             A high-level `vault` tool for simplified manual reading of secrets
-            in a kv store.
+            in a kv store. Configuration directories, in decending order of
+            precedence, are: {', '.join(map(str, config_dirs))}.
         """
     )
 
@@ -324,9 +334,9 @@ async def async_main(argv: list[str] | None) -> None:
         """,
     )
     ca_group = parser.add_mutually_exclusive_group()
-    default_ca_path = (
-        Path(platformdirs.user_config_dir("pole", "bbc")) / "default_ca.pem"
-    )
+    default_ca_path = None
+    if config_dirs_existing and (config_dirs_existing[0] / "default_ca.pem").is_file():
+        default_ca_path = config_dirs_existing[0] / "default_ca.pem"
     ca_group.add_argument(
         "--certificate-authority",
         "--ca",
@@ -334,15 +344,16 @@ async def async_main(argv: list[str] | None) -> None:
         type=str,
         default=os.environ.get(
             "POLE_VAULT_CA",
-            str(default_ca_path) if default_ca_path.is_file() else None,
+            str(default_ca_path) if default_ca_path is not None else None,
         ),
         help=f"""
             If provided, the certificate bundle file (*.pem) to use to verify
             TLS connections to Vault.  Overrides the value in the POLE_VAULT_CA
             environment variable. The environment variable further overrides
-            the certificate in {default_ca_path} (if specified). If none of
-            these are specified, falls back to using the Certifi certificate
-            bundle.
+            the certificate named 'default_ca.pen' in the first of the
+            following directories to exist: {', '.join(map(str, config_dirs))}.
+            If none of these are specified, falls back to using the Certifi
+            certificate bundle.
         """,
     )
     ca_group.add_argument(
@@ -556,10 +567,15 @@ async def async_main(argv: list[str] | None) -> None:
         "--rules",
         "-r",
         type=Path,
-        default=Path(platformdirs.user_config_dir("pole", "bbc")) / "guess",
-        help="""
+        default=(
+            config_dirs_existing[0] / "guess"
+            if config_dirs_existing
+            else Path(os.devnull)
+        ),
+        help=f"""
             The directory from which to read *.toml files containing rules.
-            Default %(default)s.
+            Defaults to the 'guess' subdirectory in the first of the following
+            directories to exist: {', '.join(map(str, config_dirs))}.
         """,
     )
     add_get_non_path_arguments(guess_parser)
