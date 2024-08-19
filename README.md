@@ -341,12 +341,12 @@ directory which is, for example:
       directory](https://specifications.freedesktop.org/basedir-spec/latest/)!)
     * `/Library/Application Support/pole` (under MacOS)
 
-The list of configuration directories for your system are enumerated at the top
-of the `pole --help` output.
+The list of configuration directories for your system can be enumerated (in
+descending order of precedence) using:
 
-If configuration (be it rules or certificates) exists in multiple places, only
-the configuration which exists in the highest precedence configuration
-directory will be used. The contents of all other configuration directories are
-ignored (i.e. we don't combine system and user configurations). For example,
-you can suppress any system-defined configuration by creating an empty
-user-level configuration directory.
+    python -m pole.config
+
+If configuration files (be it rules or certificates) exist in multiple places,
+only the files in the highest precedence configuration directory are be used.
+The contents of all other configuration directories are ignored (e.g. pole
+won't combine system and user configurations).
