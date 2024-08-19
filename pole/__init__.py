@@ -299,20 +299,12 @@ async def guess_command(
 
 
 async def async_main(argv: list[str] | None) -> None:
-    pd = platformdirs.PlatformDirs("pole", "bbc", multipath=True)
-    config_dirs = list(
-        map(
-            Path,
-            os.pathsep.join([pd.user_config_dir, pd.site_config_dir]).split(os.pathsep),
-        )
-    )
-    config_dirs_existing = [p for p in config_dirs if p.is_dir()]
+    from pole.config import config_dirs, config_dir
 
     parser = ArgumentParser(
-        description=f"""
+        description="""
             A high-level `vault` tool for simplified manual reading of secrets
-            in a kv store. Configuration directories, in decending order of
-            precedence, are: {', '.join(map(str, config_dirs))}.
+            in a kv store.
         """
     )
 
@@ -335,8 +327,8 @@ async def async_main(argv: list[str] | None) -> None:
     )
     ca_group = parser.add_mutually_exclusive_group()
     default_ca_path = None
-    if config_dirs_existing and (config_dirs_existing[0] / "default_ca.pem").is_file():
-        default_ca_path = config_dirs_existing[0] / "default_ca.pem"
+    if config_dir and (config_dir / "default_ca.pem").is_file():
+        default_ca_path = config_dir / "default_ca.pem"
     ca_group.add_argument(
         "--certificate-authority",
         "--ca",
@@ -567,11 +559,7 @@ async def async_main(argv: list[str] | None) -> None:
         "--rules",
         "-r",
         type=Path,
-        default=(
-            config_dirs_existing[0] / "guess"
-            if config_dirs_existing
-            else Path(os.devnull)
-        ),
+        default=config_dir / "guess" if config_dir else Path(os.devnull),
         help=f"""
             The directory from which to read *.toml files containing rules.
             Defaults to the 'guess' subdirectory in the first of the following
