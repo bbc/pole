@@ -1,4 +1,4 @@
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 import os
 import sys
@@ -382,6 +382,9 @@ async def async_main(argv: list[str] | None) -> None:
             the POLE_VAULT_KV_MOUNT environment variable or, if that is not
             defined, 'secret'.
         """,
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
     subparsers = parser.add_subparsers(title="command", required=True)
