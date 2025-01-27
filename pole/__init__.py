@@ -384,6 +384,13 @@ async def async_main(argv: list[str] | None) -> None:
         """,
     )
     parser.add_argument(
+        "--proxy-addr",
+        default=os.environ.get("POLE_PROXY_ADDR", None),
+        help="""
+            The address of the proxy to use when making requests to Vault.
+        """,
+    )
+    parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
@@ -582,11 +589,14 @@ async def async_main(argv: list[str] | None) -> None:
         verify = args.certificate_authority
     else:
         verify = not args.no_verify
+    
+    proxies = { 'https': args.proxy_addr } if args.proxy_addr is not None else None
 
     client = Client(
         url=args.address,
         token=args.token,
         verify=verify,
+        proxies=proxies
     )
 
     try:

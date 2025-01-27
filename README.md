@@ -135,6 +135,10 @@ order of precedence):
 * Place the certificate in `default_ca.pem` in the pole config directory (see
   [Pole configuration directory](#pole-configuration-directory).
 
+If you need to access your Vault instance through a HTTPS proxy, you can specify
+the address of your proxy server using `--proxy-addr` or the `POLE_PROXY_ADDR` 
+environment variable.
+
 
 Secret guessing
 ---------------
