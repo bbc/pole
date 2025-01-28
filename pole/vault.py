@@ -39,7 +39,7 @@ async def detect_kv_version(client: Client, mount_point: str = "secret") -> KvV1
         kv1_list.cancel()
         raise
     finally:
-        await asyncio.wait([kv1_list, kv2_list])
+        await asyncio.gather(kv1_list, kv2_list, return_exceptions=True)
 
 
 async def read_secret(kv: KvV1orV2, path: str, mount_point: str = "secret"):
