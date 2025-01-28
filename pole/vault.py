@@ -36,6 +36,8 @@ async def detect_kv_version(client: Client, mount_point: str = "secret") -> KvV1
         # kv2_list failed for some other reason (e.g. access denied), cleanup
         kv1_list.cancel()
         raise
+    finally:
+        await asyncio.wait([kv1_list, kv2_list])
 
 
 async def read_secret(kv: KvV1 | KvV2, path: str, mount_point: str = "secret"):
@@ -107,5 +109,5 @@ async def list_secrets_recursive(
     except:
         for child in child_iterators.values():
             if child is not None:
-                child.aclose()
+                await child.aclose()
         raise
