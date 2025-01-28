@@ -1,4 +1,12 @@
-from typing import TypeVar, AsyncIterator, AsyncGenerator, Callable, Any, Iterator
+from typing import (
+    TypeVar,
+    AsyncIterator,
+    AsyncGenerator,
+    Callable,
+    Any,
+    Iterator,
+    Optional,
+)
 
 import asyncio
 import math
@@ -23,7 +31,7 @@ def eager_async_iter(
     """
     # A queue to buffer up the iterator values in. Values are wrapped in a
     # 1-tuple and the end of the iteration is indicated by a None.
-    buffer: asyncio.Queue[tuple[T] | None] = asyncio.Queue(max_buffer)
+    buffer: asyncio.Queue[Optional[tuple[T]]] = asyncio.Queue(max_buffer)
 
     # Execute the iterator eagerly into the buffer
     async def runner() -> None:

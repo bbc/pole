@@ -2,7 +2,7 @@
 Utilities for working with the system clipboard.
 """
 
-from typing import AsyncIterator
+from typing import AsyncIterator, Union
 
 import asyncio
 from contextlib import asynccontextmanager
@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 import pyperclip  # type: ignore
 
 
-async def copy(value: str | tuple[str, ...]) -> tuple[str, ...]:
+async def copy(value: Union[str, tuple[str, ...]]) -> tuple[str, ...]:
     """
     Copy a value to the clipboard.
 

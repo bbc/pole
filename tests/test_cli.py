@@ -1,6 +1,6 @@
 import pytest
 
-from typing import Any, AsyncIterator
+from typing import Any, AsyncIterator, Union
 
 import asyncio
 from unittest.mock import Mock, AsyncMock
@@ -46,12 +46,12 @@ def secrets(vault: Client) -> SecretsDict:
 
 class MockClipboard:
 
-    history: list[str | tuple[str, ...]]
+    history: list[Union[str, tuple[str, ...]]]
 
     def __init__(self) -> None:
         self.history = [("",)]
 
-    async def copy(self, value: str | tuple[str, ...]) -> None:
+    async def copy(self, value: Union[str, tuple[str, ...]]) -> None:
         self.history.append(value)
 
     async def paste(self) -> tuple[str, ...]:
@@ -63,7 +63,7 @@ class MockClipboard:
 
     @asynccontextmanager
     async def temporarily_copy(
-        self, value: str | tuple[str, ...]
+        self, value: Union[str, tuple[str, ...]]
     ) -> AsyncIterator[tuple[str, ...]]:
         before = await self.paste()
         await self.copy(value)

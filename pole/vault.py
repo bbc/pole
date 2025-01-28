@@ -2,7 +2,7 @@
 Implementations of various higher-level Vault functions.
 """
 
-from typing import AsyncIterator
+from typing import AsyncIterator, Union
 
 import asyncio
 
@@ -13,8 +13,10 @@ from hvac.exceptions import InvalidPath
 
 from pole.async_utils import eager_async_iter
 
+KvV1orV2 = Union[KvV1, KvV2]
 
-async def detect_kv_version(client: Client, mount_point: str = "secret") -> KvV1 | KvV2:
+
+async def detect_kv_version(client: Client, mount_point: str = "secret") -> KvV1orV2:
     """
     Detect the kv store version mounted at the provided mount_point and return
     the relevant API class.
@@ -40,7 +42,7 @@ async def detect_kv_version(client: Client, mount_point: str = "secret") -> KvV1
         await asyncio.wait([kv1_list, kv2_list])
 
 
-async def read_secret(kv: KvV1 | KvV2, path: str, mount_point: str = "secret"):
+async def read_secret(kv: KvV1orV2, path: str, mount_point: str = "secret"):
     """
     Read (the latest version of) a KV value from vault. Returns only the
     key/value pairs stored: any metadata is excluded.
@@ -56,7 +58,7 @@ async def read_secret(kv: KvV1 | KvV2, path: str, mount_point: str = "secret"):
 
 
 async def list_secrets(
-    kv: KvV1 | KvV2, path: str, mount_point: str = "secret"
+    kv: KvV1orV2, path: str, mount_point: str = "secret"
 ) -> list[str]:
     """
     List the secrets at a given path.
@@ -68,7 +70,7 @@ async def list_secrets(
 
 
 async def list_secrets_recursive(
-    kv: KvV1 | KvV2,
+    kv: KvV1orV2,
     path: str = "",
     mount_point: str = "secret",
 ) -> AsyncIterator[str]:

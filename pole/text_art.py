@@ -2,13 +2,13 @@
 Simple text-based formatting utilities.
 """
 
-from typing import Generator
+from typing import Generator, Optional
 
 from shutil import get_terminal_size
 from itertools import zip_longest
 
 
-def dict_to_table(data: dict[str, str], term_width: int | None = None) -> str:
+def dict_to_table(data: dict[str, str], term_width: Optional[int] = None) -> str:
     r"""
     Produce a string containing an ASCII-art table for the provided dictionary.
 
@@ -77,7 +77,7 @@ class PathsToTrees:
     # A single buffered 'path' to be printed (we need to keep a path buffered
     # because how we print a path depends on whether the next path is in the
     # same directory or not!)
-    _buffered_path: str | None
+    _buffered_path: Optional[str]
 
     SKP = "│   "
     TEE = "├── "
@@ -87,7 +87,7 @@ class PathsToTrees:
         self._last_parent = []
         self._buffered_path = None
 
-    def _get_line(self, path: str, next_parents: list[str] | None) -> str:
+    def _get_line(self, path: str, next_parents: Optional[list[str]]) -> str:
         """
         Format a given path, with foreknowledge of the parent path of the next
         item in the tree.

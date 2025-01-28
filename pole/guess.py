@@ -2,7 +2,7 @@
 Logic for guessing secrets from hints using user-defined rules.
 """
 
-from typing import Iterator, Any, Iterable
+from typing import Iterator, Any, Iterable, Optional, Union
 
 import sys
 import re
@@ -140,7 +140,7 @@ class UnknownRuleOptionsError(RuleError):
 
 
 def format_string_uses_none(
-    format_string: str, *numbered: str | None, **named: str | None
+    format_string: str, *numbered: Optional[str], **named: Optional[str]
 ) -> bool:
     """
     Given a format string and the associated positional and named format
@@ -275,14 +275,14 @@ def parse_rule(rule_file: Path, rule: dict[str, Any]) -> Rule:
 
     # Get path template(s)
     try:
-        path_templates: str | list[str] = rule.pop("path")
+        path_templates: Union[str, list[str]] = rule.pop("path")
         if isinstance(path_templates, str):
             path_templates = [path_templates]
     except KeyError:
         raise MissingPathError(rule_file, name)
 
     # Get secret keys
-    keys: str | list[str] = rule.pop("key", [])
+    keys: Union[str, list[str]] = rule.pop("key", [])
     if isinstance(keys, str):
         keys = [keys]
 

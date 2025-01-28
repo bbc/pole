@@ -1,5 +1,7 @@
 __version__ = "0.0.2"
 
+from typing import Optional
+
 import os
 import sys
 import asyncio
@@ -26,6 +28,7 @@ from pole.async_utils import countdown
 from pole import clipboard
 from pole.guess import guess, GuessError
 from pole.vault import (
+    KvV1orV2,
     detect_kv_version,
     read_secret,
     list_secrets,
@@ -33,7 +36,7 @@ from pole.vault import (
 )
 
 
-async def ls_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -> None:
+async def ls_command(parser: ArgumentParser, args: Namespace, kv: KvV1orV2) -> None:
     """Implements the 'ls' command."""
     if args.recursive:
         async for key in list_secrets_recursive(kv, args.path, mount_point=args.mount):
@@ -43,9 +46,7 @@ async def ls_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -
             print(key)
 
 
-async def tree_command(
-    parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2
-) -> None:
+async def tree_command(parser: ArgumentParser, args: Namespace, kv: KvV1orV2) -> None:
     """Implements the 'tree' command."""
     ptt = PathsToTrees()
     print(args.path.rstrip("/") + "/")
@@ -54,7 +55,7 @@ async def tree_command(
     print(ptt.close())
 
 
-def print_secret(secrets: dict[str, str], key: str | None, use_json: bool) -> None:
+def print_secret(secrets: dict[str, str], key: Optional[str], use_json: bool) -> None:
     """Print a secret to stdout."""
     # Print secrets to the terminal
     if use_json:
@@ -106,7 +107,7 @@ async def copy_secret(
             show_notification(f"Secret copied", f"{key} from {path}")
 
 
-async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -> None:
+async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1orV2) -> None:
     """Implements the 'get' command."""
     secrets = await read_secret(kv, args.path, mount_point=args.mount)
 
@@ -149,7 +150,7 @@ async def get_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
         print_secret(secrets, args.key, args.json)
 
 
-async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) -> None:
+async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1orV2) -> None:
     """Implements the 'fzf' command."""
     history_file = Path(platformdirs.user_cache_dir("pole", "bbc")) / "fzf_history"
     history_file.parent.mkdir(parents=True, exist_ok=True)
@@ -217,9 +218,7 @@ async def fzf_command(parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2) 
         sys.exit(1)
 
 
-async def guess_command(
-    parser: ArgumentParser, args: Namespace, kv: KvV1 | KvV2
-) -> None:
+async def guess_command(parser: ArgumentParser, args: Namespace, kv: KvV1orV2) -> None:
     """Implements the 'guess' command."""
 
     # Use hints from clipboard if none given
@@ -298,7 +297,7 @@ async def guess_command(
         print_secret(secrets, args.key, args.json)
 
 
-async def async_main(argv: list[str] | None) -> None:
+async def async_main(argv: Optional[list[str]]) -> None:
     from pole.config import config_dirs, config_dir
 
     parser = ArgumentParser(
@@ -622,7 +621,7 @@ async def async_main(argv: list[str] | None) -> None:
         sys.exit(1)
 
 
-def main(argv: list[str] | None = None) -> None:
+def main(argv: Optional[list[str]] = None) -> None:
     try:
         asyncio.run(async_main(argv))
     except KeyboardInterrupt:

@@ -6,6 +6,8 @@ When used as a script, prints the configuration directories in decending order
 of precedence to stdout.
 """
 
+from typing import Optional
+
 import os
 from pathlib import Path
 
@@ -26,7 +28,7 @@ The complete set of possible configuration directories, in reducing order of
 precedence.
 """
 
-config_dir: None | Path = None
+config_dir: Optional[Path] = None
 """
 The actual configuration directory in use.
 """

@@ -23,11 +23,11 @@ class TestEagerAsyncIter:
         await asyncio.wait_for(done.wait(), 1)
 
         # And we should get the values out
-        assert await anext(async_iter) == 1
-        assert await anext(async_iter) == 2
-        assert await anext(async_iter) == 3
+        assert await async_iter.__anext__() == 1
+        assert await async_iter.__anext__() == 2
+        assert await async_iter.__anext__() == 3
         with pytest.raises(StopAsyncIteration):
-            await anext(async_iter)
+            await async_iter.__anext__()
 
     async def test_iterator_crashes(self) -> None:
         async def example() -> AsyncIterator[int]:
@@ -36,11 +36,11 @@ class TestEagerAsyncIter:
 
         async_iter = eager_async_iter(example())
 
-        assert await anext(async_iter) == 1
+        assert await async_iter.__anext__() == 1
 
         # Iterator's exception should come out
         with pytest.raises(NotImplementedError):
-            await anext(async_iter)
+            await async_iter.__anext__()
 
     async def test_buffer_limit_and_cancel(self) -> None:
         cancelled = asyncio.Event()
@@ -58,9 +58,9 @@ class TestEagerAsyncIter:
         async_iter = eager_async_iter(example(), 2)
 
         # Make sure iterator has started
-        assert await anext(async_iter) == 1
-        assert await anext(async_iter) == 2
-        assert await anext(async_iter) == 3
+        assert await async_iter.__anext__() == 1
+        assert await async_iter.__anext__() == 2
+        assert await async_iter.__anext__() == 3
 
         # Stop the iterator
         await async_iter.aclose()
