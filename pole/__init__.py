@@ -1,4 +1,4 @@
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 from typing import Optional
 
@@ -335,16 +335,20 @@ async def async_main(argv: Optional[list[str]]) -> None:
         type=str,
         default=os.environ.get(
             "POLE_VAULT_CA",
-            str(default_ca_path) if default_ca_path is not None else None,
+            os.environ.get(
+                "VAULT_CACERT",
+                str(default_ca_path) if default_ca_path is not None else None,
+            ),
         ),
         help=f"""
             If provided, the certificate bundle file (*.pem) to use to verify
             TLS connections to Vault.  Overrides the value in the POLE_VAULT_CA
-            environment variable. The environment variable further overrides
-            the certificate named 'default_ca.pen' in the first of the
-            following directories to exist: {', '.join(map(str, config_dirs))}.
-            If none of these are specified, falls back to using the Certifi
-            certificate bundle.
+            (higher priority) and VAULT_CACERT (lower priority) environment
+            variables. The environment variables further override the
+            certificate named 'default_ca.pem' in the first of the following
+            directories to exist: {', '.join(map(str, config_dirs))}.  If none
+            of these are specified, falls back to using the Certifi certificate
+            bundle.
         """,
     )
     ca_group.add_argument(
