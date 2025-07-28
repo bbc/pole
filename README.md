@@ -97,7 +97,7 @@ Installation
 
 Install using `pip` into your chosen Python environment:
 
-    $ pip install "git+ssh://git@github.com/bbc/pole.git@main"
+    $ pip install bbc-pole
 
 For fuzzy-search functionality, [fzf](https://github.com/junegunn/fzf) must be
 installed.

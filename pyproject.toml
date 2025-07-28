@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pole"
+name = "bbc-pole"
 description = "Pole is a high-level `vault` tool for more conveniently finding and reading secrets."
 readme = "README.md"
 license-files = ["LICENSE"]
