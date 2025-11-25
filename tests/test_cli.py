@@ -8,18 +8,44 @@ from textwrap import dedent
 from contextlib import asynccontextmanager
 from pathlib import Path
 import stat
+import json
 
 from hvac import Client
 from hvac.api.secrets_engines.kv_v1 import KvV1
 from hvac.api.secrets_engines.kv_v2 import KvV2
 
 import pole
-from pole import main
+from pole import main, get_environment_vault_token
 from pole import clipboard
 
 from test_vault import vault
 
 SecretsDict = dict[str, dict[str, str]]
+
+
+class TestGetEnvironmentVaultToken:
+
+    @pytest.mark.parametrize("vault_config_exists", [False, True])
+    def test_none(
+        self, vault_config_exists: bool, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        monkeypatch.delenv("VAULT_TOKEN", raising=False)
+        assert get_environment_vault_token(tmp_path / ".vault") is None
+
+    def test_environment(self, tmp_path: Path, monkeypatch: Any) -> None:
+        monkeypatch.setenv("VAULT_TOKEN", "1234")
+        assert get_environment_vault_token(tmp_path / ".vault") == "1234"
+
+    def test_token_helper(self, tmp_path: Path, monkeypatch: Any) -> None:
+        helper = tmp_path / "helper.sh"
+        helper.write_text("#!/bin/bash\necho -n 1234")
+        helper.chmod(0o755)
+
+        vault_config = tmp_path / ".vault"
+        vault_config.write_text(f"token_helper = {json.dumps(str(helper))}\n")
+
+        monkeypatch.delenv("VAULT_TOKEN", raising=False)
+        assert get_environment_vault_token(tmp_path / ".vault") == "1234"
 
 
 @pytest.fixture

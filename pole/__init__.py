@@ -10,6 +10,7 @@ import string
 from argparse import ArgumentParser, Namespace
 import urllib3
 import json
+from subprocess import run
 from pathlib import Path
 
 import platformdirs
@@ -34,6 +35,30 @@ from pole.vault import (
     list_secrets,
     list_secrets_recursive,
 )
+
+
+def get_environment_vault_token(
+    vault_config_file: Path = Path.home() / ".vault",
+) -> str | None:
+    """
+    Get the Vault token configured in VAULT_TOKEN or the configured Vault token
+    helper, if any.
+    """
+    if vault_token := os.environ.get("VAULT_TOKEN", None):
+        return vault_token
+    else:
+        if vault_config_file.is_file():
+            for line in vault_config_file.open():
+                if match := re.match(r"^\s*token_helper\s*=\s*(.*)$", line):
+                    helper_path = json.loads(match.group(1))
+                    vault_token = run(
+                        [helper_path, "get"],
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    ).stdout
+                    if vault_token:
+                        return vault_token
 
 
 async def ls_command(parser: ArgumentParser, args: Namespace, kv: KvV1orV2) -> None:
@@ -321,7 +346,7 @@ async def async_main(argv: Optional[list[str]]) -> None:
         help="""
             The vault token to use. If not given, uses the value in the
             VAULT_TOKEN environment variable or the configured Vault token
-            agent.
+            helper.
         """,
     )
     ca_group = parser.add_mutually_exclusive_group()
@@ -585,6 +610,9 @@ async def async_main(argv: Optional[list[str]]) -> None:
         verify = args.certificate_authority
     else:
         verify = not args.no_verify
+
+    if args.token is None:
+        args.token = get_environment_vault_token()
 
     client = Client(
         url=args.address,
