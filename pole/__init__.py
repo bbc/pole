@@ -60,6 +60,8 @@ def get_environment_vault_token(
                     if vault_token:
                         return vault_token
 
+    return None
+
 
 async def ls_command(parser: ArgumentParser, args: Namespace, kv: KvV1orV2) -> None:
     """Implements the 'ls' command."""
