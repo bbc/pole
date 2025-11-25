@@ -39,7 +39,7 @@ from pole.vault import (
 
 def get_environment_vault_token(
     vault_config_file: Path = Path.home() / ".vault",
-) -> str | None:
+) -> Optional[str]:
     """
     Get the Vault token configured in VAULT_TOKEN or the configured Vault token
     helper, if any.
